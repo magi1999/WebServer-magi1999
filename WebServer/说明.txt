@@ -1,0 +1,29 @@
+Channel:保存事件的基本属性，需要监听的事件，响应的事件，可读处理，可写处理，错误处理函数。处理函数。
+
+Epoll:封装了epoll的相关操作，构造函数创建一个epoo，往epoll中添加，删除，修改描述符，通过epoll_wait得到活跃的事件。
+fd2chan_[]保存Channel的shared_ptr,fd2http_[]保存HttpData的shared_ptr
+
+EventLoop ：新建一个Epoll类并向其中添加一个唤醒事件，使用eventfd进行通信，这样在有需要时可以唤醒阻塞在epoll_wait上的epoll。
+loop()函数得到活跃的文件描述符并调用Channel的处理函数，然后执行委托给此Eventloop的func，最后执行time_manager的过期处理函数。
+runInLoop()如果在当前线程则直接执行，否则调用queueInLoop()。queueInLoop()将函数添加到func等待队列，如果线程阻塞在
+epoll_wait或者正在处理func等待队列，则通过唤醒事件唤醒Epoll进行处理。
+
+EventLoopThread：创建Thread类。startLoop()函数开启线程工作，工作函数为Eventloop.loop()，创建Eventloop然后loop()；
+
+EventLoopThreadPool:记录主线程Eventloop和工作线程线程数量。初始化线程并调用EventLoopThread的startLoop()函数开启线程工作。决定哪个线程处理下次事件。
+
+Server：开启监听端口并加入主线程Epoll中，开启线程池工作。设置监听事件的回调函数。有连接到来时创建HttpData，调用HttpData的queueInLoop函数，
+传入HttpData::newEvent
+
+HttpData： 新建一个Channel，设置回调函数。handleRead()通过状态机解析request  HttpData::newEvent设置事件属性并加入到Epoll中。
+
+Timer： TimerNode类记录HttpDate的超时时间，持有一个HttpData的shared_ptr。TimerNode析构函数调用HttpData的handleClose()。
+TimerManager：往小根堆中添加SPTimerNode，调用HttpData的linkTimer函数。handleExpiredEvent() 把小根堆中超时和失效的SPTimerNode
+删除。
+一个点被置为deleted,它最迟会在TIMER_TIME_OUT时间后被删除。
+这样做有两个好处：
+(1) 第一个好处是不需要遍历优先队列，省时。
+(2)第二个好处是给超时时间一个容忍的时间，就是设定的超时时间是删除的下限(并不是一到超时时间就立即删除)，如果监听的请求在超时后的下一次请求中又一次出现了，
+就不用再重新申请RequestData节点了，这样可以继续重复利用前面的RequestData，减少了一次delete和一次new的时间。
+
+Util：封装readn和writen函数。设置文件描述符状态的函数。开启主进程监听端口

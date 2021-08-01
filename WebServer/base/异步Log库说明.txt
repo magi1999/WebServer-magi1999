@@ -1,0 +1,11 @@
+Log库包括FileUtil，LogFile，LogStream，AsyncLogging，Logging四个类
+
+FileUtil是最底层的文件类，封装了Log文件的打开、写入并在类析构的时候关闭文件，底层使用了标准IO，该append函数直接向文件写。线程不安全。
+LogFile进一步封装了FileUtil，线程安全，一定次数自动刷新。
+LogStream重载<<运算符，标准化输出，同时定义了一块缓冲区（缓冲区存放一行完整的Log语句），数据先输入缓冲区再写入实际文件。
+AsyncLogging为常驻的Log线程。threadfunc()把LogStream中缓冲区内容发送给LogFile。
+AsyncLogging::append会向缓冲区添加内容，一旦有一块缓冲区填满，则会唤醒threadfunc()。
+实际采用了四缓冲，AsyncLogging类中有两个缓冲区，threadfunc()里有两个缓冲区，采用shared_ptr
+进行管理，减少了重复申请空间的开销。
+Logging为实际对外接口，每次Logging类析构时，会把数据发送给AsyncLogging。
+第一次析构Logging时，采用pthread_once使AsyncLogging创建一个专门的Log线程并开启
