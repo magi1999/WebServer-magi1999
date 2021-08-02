@@ -2,6 +2,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <queue>
+#include "base/Logging.h"
 
 TimerNode::TimerNode(std::shared_ptr<HttpData> requestData, int timeout)
 :deleted_(false), SPHttpData(requestData) 
@@ -44,6 +45,10 @@ bool TimerNode::isValid()
 
 void TimerNode::clearReq() 
 {
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    size_t temp = (((now.tv_sec % 10000) * 1000) + (now.tv_usec / 1000));
+    LOG<<"now: "<<temp<<" fd"<<SPHttpData->fd_;
     SPHttpData.reset();
     this->setDeleted();
 }
@@ -77,6 +82,13 @@ void TimerManager::handleExpiredEvent()
     while (!timerNodeQueue.empty()) 
     {
         SPTimerNode ptimer_now = timerNodeQueue.top();
+        struct timeval now;
+    gettimeofday(&now, NULL);
+    size_t temp = (((now.tv_sec % 10000) * 1000) + (now.tv_usec / 1000));
+    LOG<<"now: "<<temp<<" isDeleted: "<<ptimer_now->isDeleted()<<" isValid()"<<ptimer_now->isValid()
+    <<" expiredTime_:"<<ptimer_now->getExpTime();
+    if(ptimer_now->SPHttpData)
+    LOG<<" fd: "<<ptimer_now->SPHttpData->fd_;
         if (ptimer_now->isDeleted())
         timerNodeQueue.pop();
         else if (ptimer_now->isValid() == false)

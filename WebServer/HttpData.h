@@ -82,11 +82,11 @@ class HttpData : public std::enable_shared_from_this<HttpData> {
       EventLoop *getLoop() { return loop_; }
       void handleClose();
       void newEvent();
+      int fd_;
 
   private:
       EventLoop *loop_;
       std::shared_ptr<Channel> channel_;
-      int fd_;
       std::string inBuffer_;
       std::string outBuffer_;
       bool error_;

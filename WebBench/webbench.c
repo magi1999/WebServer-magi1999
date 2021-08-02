@@ -1,3 +1,21 @@
+/*
+* (C) Radim Kolar 1997-2004
+* This is free software, see GNU Public License version 2 for
+* details.
+*
+* Simple forking WWW Server benchmark:
+*
+* Usage:
+*   webbench --help
+*
+* Return codes:
+*    0 - sucess
+*    1 - benchmark failed (server is not on-line)
+*    2 - bad param
+*    3 - internal error, fork failed
+* 
+*/ 
+
 #include "socket.c"
 #include <unistd.h>
 #include <sys/param.h>
@@ -156,6 +174,34 @@ int main(int argc, char *argv[])
             );
  
     build_request(argv[optind]);
+ 
+    // print request info ,do it in function build_request
+    /*printf("Benchmarking: ");
+ 
+    switch(method)
+    {
+        case METHOD_GET:
+        default:
+        printf("GET");break;
+        case METHOD_OPTIONS:
+        printf("OPTIONS");break;
+        case METHOD_HEAD:
+        printf("HEAD");break;
+        case METHOD_TRACE:
+        printf("TRACE");break;
+    }
+    
+    printf(" %s",argv[optind]);
+    
+    switch(http10)
+    {
+        case 0: printf(" (using HTTP/0.9)");break;
+        case 2: printf(" (using HTTP/1.1)");break;
+    }
+ 
+    printf("\n");
+    */
+
     printf("Runing info: ");
 
     if(clients==1) 
@@ -179,6 +225,8 @@ void build_request(const char *url)
     char tmp[10];
     int i;
 
+    //bzero(host,MAXHOSTNAMELEN);
+    //bzero(request,REQUEST_SIZE);
     memset(host,0,MAXHOSTNAMELEN);
     memset(request,0,REQUEST_SIZE);
 
@@ -305,6 +353,16 @@ static int bench(void)
         perror("pipe failed.");
         return 3;
     }
+
+    /* not needed, since we have alarm() in childrens */
+    /* wait 4 next system clock tick */
+    /*
+    cas=time(NULL);
+    while(time(NULL)==cas)
+    sched_yield();
+    */
+
+    /* fork childs */
     for(i=0;i<clients;i++)
     {
         pid=fork();
@@ -443,7 +501,7 @@ void benchcore(const char *host,const int port,const char *req)
                 {
                     if(timerexpired) break; 
                     i=read(s,buf,1500);
-                    fprintf(stderr,"%d\n",i); 
+                    /* fprintf(stderr,"%d\n",i); */
                     if(i<0) 
                     { 
                         failed++;
@@ -488,6 +546,7 @@ void benchcore(const char *host,const int port,const char *req)
                 {
                     if(timerexpired) break; 
                     i=read(s,buf,1500);
+                    fprintf(stderr,"%d\n",i);
                     if(i<0) 
                     { 
                         failed++;

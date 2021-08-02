@@ -22,10 +22,10 @@ class TimerNode
       void setDeleted() { deleted_ = true; }
       bool isDeleted() const { return deleted_; }
       size_t getExpTime() const { return expiredTime_; }
+      std::shared_ptr<HttpData> SPHttpData;
   private:
       bool deleted_;
       size_t expiredTime_;
-      std::shared_ptr<HttpData> SPHttpData;
 };
 
 struct TimerCmp 

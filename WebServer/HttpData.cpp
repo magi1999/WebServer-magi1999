@@ -154,7 +154,7 @@ void HttpData::handleRead()
     {
         bool zero = false;
         int read_num = readn(fd_, inBuffer_, zero);
-        LOG<<"HTTPDATA READ:"<<inBuffer_;
+        LOG<<"fd "<<fd_<<" HTTPDATA READ:"<<inBuffer_;
         LOG << "Request: " << inBuffer_;
         if (connectionState_ == H_DISCONNECTING) 
         {
@@ -168,7 +168,8 @@ void HttpData::handleRead()
             handleError(fd_, 400, "Bad Request1");
             break;
         }
-        else if (zero) {
+        else if (zero)
+        {
           connectionState_ = H_DISCONNECTING;
           if (read_num == 0) 
           {
@@ -256,7 +257,7 @@ void HttpData::handleRead()
           if (inBuffer_.size() > 0) 
           {
               if (connectionState_ != H_DISCONNECTING) 
-              handleRead();
+              events_ |= EPOLLIN;
           }
       } 
       else if (!error_ && connectionState_ != H_DISCONNECTED)
@@ -267,7 +268,7 @@ void HttpData::handleRead()
 
 void HttpData::handleWrite() 
 {
-  LOG<<"HTTPWRITE:"<<outBuffer_;
+  LOG<<"fd "<<fd_<<" HTTPWRITE:"<<outBuffer_;
     if (!error_ && connectionState_ != H_DISCONNECTED) 
     {
         __uint32_t &events_ = channel_->getEvents();
@@ -310,7 +311,7 @@ void HttpData::handleConn()
         else
         {
             events_ |= (EPOLLIN | EPOLLET);
-            int timeout = (DEFAULT_EXPIRED_TIME);
+            int timeout =DEFAULT_EXPIRED_TIME;
             loop_->updatePoller(channel_, timeout);
         }
     } 

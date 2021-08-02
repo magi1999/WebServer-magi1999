@@ -31,6 +31,7 @@ Epoll::~Epoll() {}
 void Epoll::epoll_add(SP_Channel request, int timeout) 
 {
     int fd = request->getFd();
+    LOG<<"epoll_add"<<fd<<" "<<timeout;
     if (timeout > 0) //添加定时器
     {
         add_timer(request, timeout);
@@ -51,8 +52,10 @@ void Epoll::epoll_add(SP_Channel request, int timeout)
 // 修改描述符状态
 void Epoll::epoll_mod(SP_Channel request, int timeout) 
 {
+
     if (timeout > 0) add_timer(request, timeout);
     int fd = request->getFd();
+        LOG<<"epoll_mod"<<fd<<" "<<timeout;
     if (!request->EqualAndUpdateLastEvents()) //如果为改变文件描述符状态，则忽略
     {
         struct epoll_event event;
@@ -70,6 +73,7 @@ void Epoll::epoll_mod(SP_Channel request, int timeout)
 void Epoll::epoll_del(SP_Channel request) 
 {
     int fd = request->getFd();
+        LOG<<"epoll_del"<<fd;
     struct epoll_event event;
     event.data.fd = fd;
     event.events = request->getLastEvents();
@@ -88,7 +92,7 @@ std::vector<SP_Channel> Epoll::poll()
       int event_count =epoll_wait(epollFd_, &*events_.begin(), events_.size(), EPOLLWAIT_TIME);
       if (event_count < 0) perror("epoll wait error");
       std::vector<SP_Channel> req_data = getEventsRequest(event_count);
-      if (req_data.size() > 0) return req_data;
+      return req_data;
     }
 }
 
